@@ -8,59 +8,83 @@
 </head>
 <body>
 
-  <h1>FleetBrain AI</h1>
-  <h2>Load Profit Calculator</h2>
+  <main class="app-shell">
+    <header class="hero">
+      <h1>FleetBrain AI</h1>
+      <p class="tagline">Smarter load decisions for owner-operators and small fleets.</p>
+    </header>
 
-  <div class="upload-section">
-    <h3>AI Screenshot Load Analyzer</h3>
-    <input type="file" id="imageUpload" accept="image/*">
-    <button onclick="analyzeScreenshot()">Analyze Screenshot</button>
-    <p id="ocrStatus"></p>
-  </div>
+    <section class="card upload-card">
+      <h2>AI Screenshot Load Analyzer</h2>
+      <p class="section-copy">
+        Upload a load board screenshot and let FleetBrain attempt to auto-fill
+        your revenue and loaded miles.
+      </p>
 
-  <div class="calculator">
-    <label for="rate">Load Revenue ($)</label>
-    <input id="rate" type="number" placeholder="Enter load revenue">
+      <div class="upload-controls">
+        <input type="file" id="imageUpload" accept="image/*">
+        <button type="button" onclick="analyzeScreenshot()">Analyze Screenshot</button>
+      </div>
 
-    <label for="miles">Loaded Miles</label>
-    <input id="miles" type="number" placeholder="Enter loaded miles">
+      <p id="ocrStatus" class="status-text"></p>
+    </section>
 
-    <label for="deadhead">Deadhead Miles</label>
-    <input id="deadhead" type="number" placeholder="Enter deadhead miles">
+    <section class="card calculator-card">
+      <h2>Load Profit Calculator</h2>
 
-    <label for="fuel">Fuel Price ($)</label>
-    <input id="fuel" type="number" step="0.01" placeholder="Enter fuel price">
+      <div class="calculator">
+        <label for="rate">Load Revenue ($)</label>
+        <input id="rate" type="number" placeholder="Enter load revenue">
 
-    <label for="mpg">Truck MPG</label>
-    <input id="mpg" type="number" step="0.1" placeholder="Enter truck MPG">
+        <label for="miles">Loaded Miles</label>
+        <input id="miles" type="number" placeholder="Enter loaded miles">
 
-    <button onclick="calculate()">Calculate Profit</button>
+        <label for="deadhead">Deadhead Miles</label>
+        <input id="deadhead" type="number" placeholder="Enter deadhead miles">
 
-    <h3 id="result"></h3>
-    <h3 id="rating"></h3>
-    <p id="advice"></p>
-    <div id="breakdown"></div>
-  </div>
+        <label for="fuel">Fuel Price ($)</label>
+        <input id="fuel" type="number" step="0.01" placeholder="Enter fuel price">
 
-  <h3>Recent Loads</h3>
-  <button class="secondary-button" onclick="clearHistory()">Clear History</button>
+        <label for="mpg">Truck MPG</label>
+        <input id="mpg" type="number" step="0.1" placeholder="Enter truck MPG">
 
-  <table id="historyTable">
-    <thead>
-      <tr>
-        <th>Revenue</th>
-        <th>Total Miles</th>
-        <th>Fuel Cost</th>
-        <th>Profit</th>
-        <th>Rating</th>
-      </tr>
-    </thead>
-    <tbody id="historyBody"></tbody>
-  </table>
+        <button type="button" onclick="calculate()">Calculate Profit</button>
+      </div>
 
-  <footer>
-    © 2026 FleetBrain. All rights reserved.
-  </footer>
+      <div class="results-panel">
+        <h3 id="result"></h3>
+        <h3 id="rating"></h3>
+        <p id="advice"></p>
+        <div id="breakdown"></div>
+      </div>
+    </section>
+
+    <section class="card history-card">
+      <div class="history-header">
+        <h2>Recent Loads</h2>
+        <button class="secondary-button" type="button" onclick="clearHistory()">Clear History</button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>Revenue</th>
+              <th>Total Miles</th>
+              <th>Fuel Cost</th>
+              <th>Profit</th>
+              <th>Rating</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      © 2026 FleetBrain. All rights reserved.
+    </footer>
+  </main>
 
   <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="app.js"></script>
