@@ -1,20 +1,45 @@
+function getEl(id) {
+  return document.getElementById(id);
+}
+
+function setValue(possibleIds, value) {
+  for (const id of possibleIds) {
+    const el = getEl(id);
+    if (el) {
+      el.value = value;
+      return true;
+    }
+  }
+  return false;
+}
+
+function getValue(possibleIds) {
+  for (const id of possibleIds) {
+    const el = getEl(id);
+    if (el) {
+      return el.value;
+    }
+  }
+  return "";
+}
+
 function calculate() {
-  let rateInput = document.getElementById("rate").value;
-  let milesInput = document.getElementById("miles").value;
-  let deadheadInput = document.getElementById("deadhead").value;
-  let fuelInput = document.getElementById("fuel").value;
-  let mpgInput = document.getElementById("mpg").value;
+  const rateInput = getValue(["rate"]);
+  const milesInput = getValue(["miles", "loadedMiles"]);
+  const deadheadInput = getValue(["deadhead"]);
+  const fuelInput = getValue(["fuel"]);
+  const mpgInput = getValue(["mpg"]);
 
-  let rate = Number(rateInput);
-  let miles = Number(milesInput);
-  let deadhead = Number(deadheadInput);
-  let fuel = Number(fuelInput);
-  let mpg = Number(mpgInput);
+  const rate = Number(rateInput);
+  const miles = Number(milesInput);
+  const deadhead = Number(deadheadInput || 0);
+  const fuel = Number(fuelInput);
+  const mpg = Number(mpgInput);
 
-  let resultElement = document.getElementById("result");
-  let ratingElement = document.getElementById("rating");
-  let adviceElement = document.getElementById("advice");
-  let breakdownElement = document.getElementById("breakdown");
+  const resultElement = getEl("result");
+  const ratingElement = getEl("rating");
+  const adviceElement = getEl("advice");
+  const breakdownElement = getEl("breakdown");
 
   if (
     rateInput === "" ||
@@ -23,36 +48,43 @@ function calculate() {
     mpgInput === ""
   ) {
     resultElement.innerText = "Please enter all required fields.";
-    ratingElement.innerText = "";
-    ratingElement.className = "";
-    adviceElement.innerText = "";
-    breakdownElement.innerText = "";
+    if (ratingElement) {
+      ratingElement.innerText = "";
+      ratingElement.className = "";
+    }
+    if (adviceElement) adviceElement.innerText = "";
+    if (breakdownElement) breakdownElement.innerText = "";
     return;
   }
 
   if (rate < 0 || miles < 0 || deadhead < 0 || fuel < 0 || mpg <= 0) {
-    resultElement.innerText = "Please enter valid positive numbers. MPG must be greater than 0.";
-    ratingElement.innerText = "";
-    ratingElement.className = "";
-    adviceElement.innerText = "";
-    breakdownElement.innerText = "";
+    resultElement.innerText =
+      "Please enter valid positive numbers. MPG must be greater than 0.";
+    if (ratingElement) {
+      ratingElement.innerText = "";
+      ratingElement.className = "";
+    }
+    if (adviceElement) adviceElement.innerText = "";
+    if (breakdownElement) breakdownElement.innerText = "";
     return;
   }
 
-  let totalMiles = miles + deadhead;
+  const totalMiles = miles + deadhead;
 
   if (totalMiles <= 0) {
     resultElement.innerText = "Total miles must be greater than 0.";
-    ratingElement.innerText = "";
-    ratingElement.className = "";
-    adviceElement.innerText = "";
-    breakdownElement.innerText = "";
+    if (ratingElement) {
+      ratingElement.innerText = "";
+      ratingElement.className = "";
+    }
+    if (adviceElement) adviceElement.innerText = "";
+    if (breakdownElement) breakdownElement.innerText = "";
     return;
   }
 
-  let fuelCost = (totalMiles / mpg) * fuel;
-  let profit = rate - fuelCost;
-  let profitPerMile = profit / totalMiles;
+  const fuelCost = (totalMiles / mpg) * fuel;
+  const profit = rate - fuelCost;
+  const profitPerMile = profit / totalMiles;
 
   resultElement.innerText =
     "Estimated Profit: $" + profit.toFixed(2) +
@@ -62,16 +94,22 @@ function calculate() {
 
   if (profitPerMile > 2) {
     ratingText = "EXCELLENT LOAD";
-    ratingElement.innerText = "FleetBrain Rating: " + ratingText;
-    ratingElement.className = "good";
+    if (ratingElement) {
+      ratingElement.innerText = "FleetBrain Rating: " + ratingText;
+      ratingElement.className = "good";
+    }
   } else if (profitPerMile > 1.25) {
     ratingText = "AVERAGE LOAD";
-    ratingElement.innerText = "FleetBrain Rating: " + ratingText;
-    ratingElement.className = "average";
+    if (ratingElement) {
+      ratingElement.innerText = "FleetBrain Rating: " + ratingText;
+      ratingElement.className = "average";
+    }
   } else {
     ratingText = "POOR LOAD";
-    ratingElement.innerText = "FleetBrain Rating: " + ratingText;
-    ratingElement.className = "bad";
+    if (ratingElement) {
+      ratingElement.innerText = "FleetBrain Rating: " + ratingText;
+      ratingElement.className = "bad";
+    }
   }
 
   let advice = "";
@@ -84,114 +122,187 @@ function calculate() {
     advice = "This load looks healthy. Profit per mile is within a good range.";
   }
 
-  adviceElement.innerText = "FleetBrain Advice: " + advice;
-
-  breakdownElement.innerText =
-    "Total Miles: " + totalMiles.toFixed(0) +
-    "\nFuel Cost: $" + fuelCost.toFixed(2) +
-    "\nRevenue: $" + rate.toFixed(2) +
-    "\nNet Profit: $" + profit.toFixed(2);
-
-  let historyBody = document.getElementById("historyBody");
-  let newRow = historyBody.insertRow(0);
-
-  let revenueCell = newRow.insertCell(0);
-  let milesCell = newRow.insertCell(1);
-  let fuelCell = newRow.insertCell(2);
-  let profitCell = newRow.insertCell(3);
-  let ratingCell = newRow.insertCell(4);
-
-  revenueCell.innerText = "$" + rate.toFixed(2);
-  milesCell.innerText = totalMiles.toFixed(0);
-  fuelCell.innerText = "$" + fuelCost.toFixed(2);
-  profitCell.innerText = "$" + profit.toFixed(2);
-  ratingCell.innerText = ratingText;
-
-  if (ratingText === "EXCELLENT LOAD") {
-    ratingCell.className = "rating-good";
-  } else if (ratingText === "AVERAGE LOAD") {
-    ratingCell.className = "rating-average";
-  } else {
-    ratingCell.className = "rating-bad";
+  if (adviceElement) {
+    adviceElement.innerText = "FleetBrain Advice: " + advice;
   }
 
-  while (historyBody.rows.length > 5) {
-    historyBody.deleteRow(5);
+  if (breakdownElement) {
+    breakdownElement.innerText =
+      "Total Miles: " + totalMiles.toFixed(0) +
+      "\nFuel Cost: $" + fuelCost.toFixed(2) +
+      "\nRevenue: $" + rate.toFixed(2) +
+      "\nNet Profit: $" + profit.toFixed(2);
+  }
+
+  const historyBody = getEl("historyBody");
+  if (historyBody) {
+    const newRow = historyBody.insertRow(0);
+
+    const revenueCell = newRow.insertCell(0);
+    const milesCell = newRow.insertCell(1);
+    const fuelCell = newRow.insertCell(2);
+    const profitCell = newRow.insertCell(3);
+    const ratingCell = newRow.insertCell(4);
+
+    revenueCell.innerText = "$" + rate.toFixed(2);
+    milesCell.innerText = totalMiles.toFixed(0);
+    fuelCell.innerText = "$" + fuelCost.toFixed(2);
+    profitCell.innerText = "$" + profit.toFixed(2);
+    ratingCell.innerText = ratingText;
+
+    if (ratingText === "EXCELLENT LOAD") {
+      ratingCell.className = "rating-good";
+    } else if (ratingText === "AVERAGE LOAD") {
+      ratingCell.className = "rating-average";
+    } else {
+      ratingCell.className = "rating-bad";
+    }
+
+    while (historyBody.rows.length > 5) {
+      historyBody.deleteRow(5);
+    }
   }
 }
 
 function clearHistory() {
-  let historyBody = document.getElementById("historyBody");
-  historyBody.innerHTML = "";
+  const historyBody = getEl("historyBody");
+  if (historyBody) {
+    historyBody.innerHTML = "";
+  }
 }
 
 async function analyzeScreenshot() {
-  const fileInput = document.getElementById("imageUpload");
-  const statusElement = document.getElementById("ocrStatus");
+  const fileInput = getEl("imageUpload") || getEl("screenshotInput");
+  const statusElement = getEl("ocrStatus");
 
-  if (!fileInput.files || fileInput.files.length === 0) {
-    statusElement.innerText = "Please upload a screenshot first.";
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    if (statusElement) {
+      statusElement.innerText = "Please upload a screenshot first.";
+    } else {
+      alert("Please upload a screenshot first.");
+    }
     return;
   }
 
   const file = fileInput.files[0];
-  statusElement.innerText = "Reading screenshot... this may take a few seconds.";
+
+  if (statusElement) {
+    statusElement.innerText = "Reading screenshot... this may take a few seconds.";
+  }
 
   try {
-    const { data } = await Tesseract.recognize(file, "eng", {
+    const result = await Tesseract.recognize(file, "eng", {
       logger: (m) => {
-        if (m.status) {
+        if (statusElement && m.status) {
           statusElement.innerText =
             m.status + " " + Math.round((m.progress || 0) * 100) + "%";
         }
       }
     });
 
-    const text = data.text || "";
+    const text = result?.data?.text || "";
     console.log("OCR TEXT:", text);
 
-    statusElement.innerText = "Screenshot analyzed. Attempting to extract load details...";
     extractLoadData(text);
   } catch (error) {
-    console.error(error);
-    statusElement.innerText = "Could not analyze screenshot. Try a clearer image.";
+    console.error("OCR ERROR:", error);
+    if (statusElement) {
+      statusElement.innerText =
+        "Could not analyze screenshot. Try a clearer screenshot.";
+    } else {
+      alert("Could not analyze screenshot. Try a clearer screenshot.");
+    }
   }
 }
 
 function extractLoadData(text) {
+  const statusElement = getEl("ocrStatus");
   const cleanedText = text.replace(/\s+/g, " ").trim();
+  console.log("CLEANED OCR TEXT:", cleanedText);
 
-  const rateMatch = cleanedText.match(/\$?\s?(\d{3,5}(?:,\d{3})?(?:\.\d{2})?)/);
-  const milesMatch = cleanedText.match(/(\d{2,5})\s?(?:mi|miles)/i);
+  let revenue = null;
+  let miles = null;
+
+  // 1. Best-case revenue match: currency values like $3,100 or $3100
+  const currencyMatches = [...cleanedText.matchAll(/\$\s?(\d{1,2}(?:,\d{3})+|\d{4,5})(?:\.\d{2})?/g)];
+  const revenueCandidates = currencyMatches
+    .map(match => Number(match[1].replace(/,/g, "")))
+    .filter(value => value >= 500 && value <= 20000);
+
+  if (revenueCandidates.length > 0) {
+    revenue = revenueCandidates[0];
+  }
+
+  // 2. Best-case miles match: 795 miles, 1087 mi, etc.
+  const mileMatches = [...cleanedText.matchAll(/(\d{2,5}(?:,\d{3})?)\s*(?:mi|miles)\b/gi)];
+  const mileCandidates = mileMatches
+    .map(match => Number(match[1].replace(/,/g, "")))
+    .filter(value => value >= 50 && value <= 3500);
+
+  if (mileCandidates.length > 0) {
+    miles = mileCandidates[0];
+  }
+
+  // 3. If revenue not found, look for larger standalone numbers
+  if (!revenue) {
+    const allNumbers = [...cleanedText.matchAll(/\b\d{2,6}(?:,\d{3})?\b/g)]
+      .map(match => Number(match[0].replace(/,/g, "")));
+
+    const possibleRevenue = allNumbers.filter(value => value >= 1000 && value <= 20000);
+    if (possibleRevenue.length > 0) {
+      revenue = possibleRevenue[0];
+    }
+  }
+
+  // 4. If miles not found, look for reasonable medium-size numbers
+  if (!miles) {
+    const allNumbers = [...cleanedText.matchAll(/\b\d{2,6}(?:,\d{3})?\b/g)]
+      .map(match => Number(match[0].replace(/,/g, "")));
+
+    const possibleMiles = allNumbers.filter(value => value >= 200 && value <= 3000);
+
+    // avoid using same number as revenue
+    const filteredMiles = possibleMiles.filter(value => value !== revenue);
+
+    if (filteredMiles.length > 0) {
+      miles = filteredMiles[0];
+    }
+  }
+
+  // 5. Try to detect lane text like Dallas, TX to Atlanta, GA
   const laneMatch = cleanedText.match(
-    /([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)\s*(?:to|-|→)\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/
+    /([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s?[A-Z]{2})\s*(?:to|-|→)\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)*,\s?[A-Z]{2})/
   );
 
-  if (rateMatch) {
-    const parsedRate = rateMatch[1].replace(/,/g, "");
-    document.getElementById("rate").value = parsedRate;
+  if (revenue) {
+    setValue(["rate"], revenue);
   }
 
-  if (milesMatch) {
-    document.getElementById("miles").value = milesMatch[1];
+  if (miles) {
+    setValue(["miles", "loadedMiles"], miles);
   }
 
-  const statusElement = document.getElementById("ocrStatus");
-
-  if (rateMatch || milesMatch) {
-    if (laneMatch) {
+  if (statusElement) {
+    if (revenue && miles) {
+      if (laneMatch) {
+        statusElement.innerText =
+          "Detected lane: " +
+          laneMatch[1] +
+          " to " +
+          laneMatch[2] +
+          ". Auto-filled revenue and miles. Review values and click Calculate Profit.";
+      } else {
+        statusElement.innerText =
+          "Auto-filled revenue and miles. Review values and click Calculate Profit.";
+      }
+    } else if (revenue || miles) {
       statusElement.innerText =
-        "Detected lane: " +
-        laneMatch[1] +
-        " to " +
-        laneMatch[2] +
-        ". Review the auto-filled values and click Calculate Profit.";
+        "Partially extracted load details. Review the values and fill in anything missing.";
     } else {
       statusElement.innerText =
-        "Text extracted. Review the auto-filled values and click Calculate Profit.";
+        "Screenshot was read, but no clear revenue or miles were found. Try a clearer screenshot.";
     }
-  } else {
-    statusElement.innerText =
-      "Screenshot was read, but no clear rate or miles were found. Try a clearer screenshot.";
   }
+
+  console.log("EXTRACTED VALUES:", { revenue, miles });
 }
