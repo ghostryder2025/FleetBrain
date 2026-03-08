@@ -1,0 +1,97 @@
+body{
+font-family: Arial;
+background:#111;
+color:white;
+text-align:center;
+padding:40px;
+}
+
+.calculator{
+width:300px;
+margin:auto;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+input{
+padding:10px;
+}
+
+button{
+padding:10px;
+background:#00c896;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+button:hover{
+background:#00a97f;
+}
+.good {
+  color: #00ff88;
+}
+
+.average {
+  color: #ffd000;
+}
+
+.bad {
+  color: #ff4d4d;
+}
+
+#advice {
+  margin-top: 14px;
+  color: #cccccc;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#breakdown {
+  margin-top: 18px;
+  font-size: 14px;
+  color: #bbbbbb;
+  line-height: 1.7;
+  padding: 12px;
+  border: 1px solid #333;
+  background: #161616;
+  border-radius: 8px;
+}
+#historyTable {
+  width: 100%;
+  max-width: 700px;
+  margin: 20px auto;
+  border-collapse: collapse;
+  background: #161616;
+  color: white;
+}
+
+#historyTable th,
+#historyTable td {
+  border: 1px solid #333;
+  padding: 10px;
+  text-align: center;
+}
+
+#historyTable th {
+  background: #222;
+}
+
+#historyTable tr:nth-child(even) {
+  background: #1d1d1d;
+}
+.rating-good {
+  color: #00ff88;
+  font-weight: bold;
+}
+
+.rating-average {
+  color: #ffd000;
+  font-weight: bold;
+}
+
+.rating-bad {
+  color: #ff4d4d;
+  font-weight: bold;
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="UTF-8">   
+<title>FleetBrain AI</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1>FleetBrain AI</h1>
+<h2>Load Profit Calculator</h2>
+
+<div class="calculator">
+
+<label>Rate ($)</label>
+<input id="rate" type="number">
+
+<label>Loaded Miles</label>
+<input id="miles" type="number">
+
+<label>Deadhead Miles</label>
+<input id="deadhead" type="number">
+
+<label>Fuel Price ($)</label>
+<input id="fuel" type="number">
+
+<label>Truck MPG</label>
+<input id="mpg" type="number">
+
+<button onclick="calculate()">Calculate Profit</button>
+
+<h3 id="result"></h3>
+<h3 id="rating"></h3>
+<p id="advice"></p>
+<div id="breakdown"></div>
+<h3>Recent Loads</h3>
+
+<button onclick="clearHistory()">Clear History</button>
+
+<table id="historyTable">
+  <thead>
+    <tr>
+      <th>Revenue</th>
+      <th>Total Miles</th>
+      <th>Fuel Cost</th>
+      <th>Profit</th>
+      <th>Rating</th>
+    </tr>
+  </thead>
+  <tbody id="historyBody">
+  </tbody>
+</table>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
