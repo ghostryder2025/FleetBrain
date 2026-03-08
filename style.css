@@ -1,34 +1,81 @@
-body{
-font-family: Arial;
-background:#111;
-color:white;
-text-align:center;
-padding:40px;
+body {
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
+  text-align: center;
+  padding: 40px 20px;
+  margin: 0;
 }
 
-.calculator{
-width:300px;
-margin:auto;
-display:flex;
-flex-direction:column;
-gap:10px;
+h1 {
+  margin-bottom: 8px;
 }
 
-input{
-padding:10px;
+h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  color: #cccccc;
 }
 
-button{
-padding:10px;
-background:#00c896;
-color:white;
-border:none;
-cursor:pointer;
+.upload-section {
+  width: 320px;
+  margin: 0 auto 25px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-button:hover{
-background:#00a97f;
+.calculator {
+  width: 320px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
+label {
+  text-align: left;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+input {
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #1b1b1b;
+  color: white;
+}
+
+button {
+  padding: 10px;
+  background: #00c896;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #00a97f;
+}
+
+.secondary-button {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.secondary-button:hover {
+  background: #555;
+}
+
 .good {
   color: #00ff88;
 }
@@ -57,7 +104,16 @@ background:#00a97f;
   border: 1px solid #333;
   background: #161616;
   border-radius: 8px;
+  white-space: pre-line;
 }
+
+#ocrStatus {
+  color: #cccccc;
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 20px;
+}
+
 #historyTable {
   width: 100%;
   max-width: 700px;
@@ -81,6 +137,7 @@ background:#00a97f;
 #historyTable tr:nth-child(even) {
   background: #1d1d1d;
 }
+
 .rating-good {
   color: #00ff88;
   font-weight: bold;
@@ -94,4 +151,10 @@ background:#00a97f;
 .rating-bad {
   color: #ff4d4d;
   font-weight: bold;
+}
+
+footer {
+  margin-top: 30px;
+  color: #777;
+  font-size: 14px;
 }

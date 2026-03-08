@@ -1,60 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
- <meta charset="UTF-8">   
-<title>FleetBrain AI</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FleetBrain AI</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<h1>FleetBrain AI</h1>
-<h2>Load Profit Calculator</h2>
+  <h1>FleetBrain AI</h1>
+  <h2>Load Profit Calculator</h2>
 
-<div class="calculator">
+  <div class="upload-section">
+    <h3>AI Screenshot Load Analyzer</h3>
+    <input type="file" id="imageUpload" accept="image/*">
+    <button onclick="analyzeScreenshot()">Analyze Screenshot</button>
+    <p id="ocrStatus"></p>
+  </div>
 
-<label>Rate ($)</label>
-<input id="rate" type="number">
+  <div class="calculator">
+    <label for="rate">Load Revenue ($)</label>
+    <input id="rate" type="number" placeholder="Enter load revenue">
 
-<label>Loaded Miles</label>
-<input id="miles" type="number">
+    <label for="miles">Loaded Miles</label>
+    <input id="miles" type="number" placeholder="Enter loaded miles">
 
-<label>Deadhead Miles</label>
-<input id="deadhead" type="number">
+    <label for="deadhead">Deadhead Miles</label>
+    <input id="deadhead" type="number" placeholder="Enter deadhead miles">
 
-<label>Fuel Price ($)</label>
-<input id="fuel" type="number">
+    <label for="fuel">Fuel Price ($)</label>
+    <input id="fuel" type="number" step="0.01" placeholder="Enter fuel price">
 
-<label>Truck MPG</label>
-<input id="mpg" type="number">
+    <label for="mpg">Truck MPG</label>
+    <input id="mpg" type="number" step="0.1" placeholder="Enter truck MPG">
 
-<button onclick="calculate()">Calculate Profit</button>
+    <button onclick="calculate()">Calculate Profit</button>
 
-<h3 id="result"></h3>
-<h3 id="rating"></h3>
-<p id="advice"></p>
-<div id="breakdown"></div>
-<h3>Recent Loads</h3>
+    <h3 id="result"></h3>
+    <h3 id="rating"></h3>
+    <p id="advice"></p>
+    <div id="breakdown"></div>
+  </div>
 
-<button onclick="clearHistory()">Clear History</button>
+  <h3>Recent Loads</h3>
+  <button class="secondary-button" onclick="clearHistory()">Clear History</button>
 
-<table id="historyTable">
-  <thead>
-    <tr>
-      <th>Revenue</th>
-      <th>Total Miles</th>
-      <th>Fuel Cost</th>
-      <th>Profit</th>
-      <th>Rating</th>
-    </tr>
-  </thead>
-  <tbody id="historyBody">
-  </tbody>
-</table>
+  <table id="historyTable">
+    <thead>
+      <tr>
+        <th>Revenue</th>
+        <th>Total Miles</th>
+        <th>Fuel Cost</th>
+        <th>Profit</th>
+        <th>Rating</th>
+      </tr>
+    </thead>
+    <tbody id="historyBody"></tbody>
+  </table>
 
-</div>
+  <footer>
+    © 2026 FleetBrain. All rights reserved.
+  </footer>
 
-<script src="app.js"></script>
-
+  <script src="https://unpkg.com/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
