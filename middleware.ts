@@ -2,12 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const supabase = createServerClient(
-    (process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith('https://') ? process.env.NEXT_PUBLIC_SUPABASE_URL : 'https://placeholder.supabase.co'),
-    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.startsWith('eyJ') ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : 'placeholder-key'),
-    {
+  // If env vars aren't configured, allow all traffic through
+  if (!supabaseUrl?.startsWith('https://') || !supabaseKey?.startsWith('eyJ')) {
+    return NextResponse.next({ request })
+  }
+
+  try {
+    let supabaseResponse = NextResponse.next({ request })
+
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -20,26 +26,29 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
+    })
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const pathname = request.nextUrl.pathname
+    const isAuthPage = pathname === '/login' || pathname === '/register'
+    const isProtected = pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/loads') ||
+      pathname.startsWith('/fleet')
+
+    if (!user && isProtected) {
+      return NextResponse.redirect(new URL('/login', request.url))
     }
-  )
 
-  const { data: { user } } = await supabase.auth.getUser()
+    if (user && isAuthPage) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
-  const pathname = request.nextUrl.pathname
-  const isAuthPage = pathname === '/login' || pathname === '/register'
-  const isProtected = pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/loads') ||
-    pathname.startsWith('/fleet')
-
-  if (!user && isProtected) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return supabaseResponse
+  } catch {
+    // On any error, allow the request through rather than crashing
+    return NextResponse.next({ request })
   }
-
-  if (user && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return supabaseResponse
 }
 
 export const config = {
