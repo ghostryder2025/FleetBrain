@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -9,8 +9,19 @@ export default function ResetPasswordPage() {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [ready, setReady] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    // Supabase fires PASSWORD_RECOVERY when user arrives from reset email link
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
@@ -30,6 +41,18 @@ export default function ResetPasswordPage() {
       router.push('/dashboard')
       router.refresh()
     }
+  }
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center space-y-3">
+          <div className="text-4xl">🔐</div>
+          <p className="text-zinc-400">Verifying your reset link…</p>
+          <p className="text-zinc-600 text-sm">This only takes a moment.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
