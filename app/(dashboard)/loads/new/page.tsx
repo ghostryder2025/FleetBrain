@@ -101,9 +101,13 @@ export default function NewLoadPage() {
       if (commodity) formData.append('commodity', commodity)
       formData.append('driver_pay', driverPay || '0')
 
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/analyze-load', {
         method: 'POST',
         body: formData,
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
       })
 
       const data = await res.json()

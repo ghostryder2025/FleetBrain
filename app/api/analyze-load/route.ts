@@ -6,7 +6,14 @@ import { getDieselPrice } from '@/lib/eia'
 export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+
+    const authHeader = req.headers.get('Authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+    const { data: { user } } = token
+      ? await supabase.auth.getUser(token)
+      : await supabase.auth.getUser()
+
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const formData = await req.formData()
