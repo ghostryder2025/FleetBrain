@@ -129,5 +129,49 @@ Flag positives for: high RPM, low deadhead, premium commodity types.`
   // Strip any accidental markdown code blocks
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
-  return JSON.parse(cleaned) as AIAnalysis
+  const parsed = JSON.parse(cleaned)
+
+  // Normalize flat responses — Claude sometimes returns top-level fields instead of nested
+  if (!parsed.extraction) {
+    const revenue = parsed.revenue ?? parsed.gross_rate ?? 0
+    const loaded_miles = parsed.loaded_miles ?? parsed.distance_miles ?? 0
+    const fuel_cost = parsed.fuel_cost ?? 0
+    const maintenance = parsed.maintenance_allocation ?? parsed.maintenance_cost ?? 0
+    const driver_pay = parsed.driver_pay ?? driverPay ?? 0
+    const toll_estimate = parsed.toll_estimate ?? parsed.toll_cost ?? 0
+    const total_expenses = parsed.total_expenses ?? (fuel_cost + maintenance + driver_pay + toll_estimate)
+    const net_profit = parsed.net_profit ?? (revenue - total_expenses)
+    const profit_per_mile = loaded_miles > 0 ? net_profit / loaded_miles : 0
+    const rate_per_mile = loaded_miles > 0 ? revenue / loaded_miles : 0
+
+    return {
+      extraction: {
+        origin: parsed.origin ?? 'Unknown',
+        destination: parsed.destination ?? 'Unknown',
+        revenue,
+        loaded_miles,
+        deadhead_miles: parsed.deadhead_miles ?? 0,
+        commodity: parsed.commodity ?? 'General Freight',
+        pickup_date: parsed.pickup_date ?? null,
+        delivery_date: parsed.delivery_date ?? null,
+        broker_name: parsed.broker_name ?? null,
+      },
+      costs: {
+        fuel_price_used: parsed.fuel_price_used ?? fuelPrice,
+        fuel_cost,
+        maintenance_allocation: maintenance,
+        driver_pay,
+        toll_estimate,
+        total_expenses,
+        net_profit,
+        profit_per_mile,
+        rate_per_mile: parsed.rate_per_mile ?? rate_per_mile,
+      },
+      rating: parsed.rating ?? 'AVERAGE',
+      recommendation: parsed.recommendation ?? '',
+      flags: parsed.flags ?? [],
+    } as AIAnalysis
+  }
+
+  return parsed as AIAnalysis
 }
