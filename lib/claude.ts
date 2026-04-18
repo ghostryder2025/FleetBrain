@@ -131,33 +131,40 @@ Flag positives for: high RPM, low deadhead, premium commodity types.`
 
   const parsed = JSON.parse(cleaned)
 
-  // Normalize flat responses — Claude sometimes returns top-level fields instead of nested
-  if (!parsed.extraction) {
-    const revenue = parsed.revenue ?? parsed.gross_rate ?? 0
-    const loaded_miles = parsed.loaded_miles ?? parsed.distance_miles ?? 0
-    const fuel_cost = parsed.fuel_cost ?? 0
-    const maintenance = parsed.maintenance_allocation ?? parsed.maintenance_cost ?? 0
-    const driver_pay = parsed.driver_pay ?? driverPay ?? 0
-    const toll_estimate = parsed.toll_estimate ?? parsed.toll_cost ?? 0
-    const total_expenses = parsed.total_expenses ?? (fuel_cost + maintenance + driver_pay + toll_estimate)
-    const net_profit = parsed.net_profit ?? (revenue - total_expenses)
+  // Normalize: handle flat responses OR nested responses with missing/incomplete costs
+  const needsNormalization = !parsed.extraction || !parsed.costs ||
+    typeof parsed.costs.fuel_cost !== 'number' ||
+    typeof parsed.costs.net_profit !== 'number'
+
+  if (needsNormalization) {
+    const ext = parsed.extraction ?? parsed
+    const c = parsed.costs ?? parsed
+
+    const revenue = Number(ext.revenue ?? c.revenue ?? parsed.revenue ?? parsed.gross_rate ?? 0)
+    const loaded_miles = Number(ext.loaded_miles ?? c.loaded_miles ?? parsed.loaded_miles ?? parsed.distance_miles ?? 0)
+    const fuel_cost = Number(c.fuel_cost ?? parsed.fuel_cost ?? 0)
+    const maintenance = Number(c.maintenance_allocation ?? c.maintenance_cost ?? parsed.maintenance_allocation ?? parsed.maintenance_cost ?? 0)
+    const driver_pay = Number(c.driver_pay ?? parsed.driver_pay ?? driverPay ?? 0)
+    const toll_estimate = Number(c.toll_estimate ?? c.toll_cost ?? parsed.toll_estimate ?? parsed.toll_cost ?? 0)
+    const total_expenses = Number(c.total_expenses ?? parsed.total_expenses ?? (fuel_cost + maintenance + driver_pay + toll_estimate))
+    const net_profit = Number(c.net_profit ?? parsed.net_profit ?? (revenue - total_expenses))
     const profit_per_mile = loaded_miles > 0 ? net_profit / loaded_miles : 0
     const rate_per_mile = loaded_miles > 0 ? revenue / loaded_miles : 0
 
     return {
       extraction: {
-        origin: parsed.origin ?? 'Unknown',
-        destination: parsed.destination ?? 'Unknown',
+        origin: ext.origin ?? parsed.origin ?? 'Unknown',
+        destination: ext.destination ?? parsed.destination ?? 'Unknown',
         revenue,
         loaded_miles,
-        deadhead_miles: parsed.deadhead_miles ?? 0,
-        commodity: parsed.commodity ?? 'General Freight',
-        pickup_date: parsed.pickup_date ?? null,
-        delivery_date: parsed.delivery_date ?? null,
-        broker_name: parsed.broker_name ?? null,
+        deadhead_miles: Number(ext.deadhead_miles ?? parsed.deadhead_miles ?? 0),
+        commodity: ext.commodity ?? parsed.commodity ?? 'General Freight',
+        pickup_date: ext.pickup_date ?? parsed.pickup_date ?? null,
+        delivery_date: ext.delivery_date ?? parsed.delivery_date ?? null,
+        broker_name: ext.broker_name ?? parsed.broker_name ?? null,
       },
       costs: {
-        fuel_price_used: parsed.fuel_price_used ?? fuelPrice,
+        fuel_price_used: Number(c.fuel_price_used ?? parsed.fuel_price_used ?? fuelPrice),
         fuel_cost,
         maintenance_allocation: maintenance,
         driver_pay,
@@ -165,7 +172,7 @@ Flag positives for: high RPM, low deadhead, premium commodity types.`
         total_expenses,
         net_profit,
         profit_per_mile,
-        rate_per_mile: parsed.rate_per_mile ?? rate_per_mile,
+        rate_per_mile: Number(c.rate_per_mile ?? parsed.rate_per_mile ?? rate_per_mile),
       },
       rating: parsed.rating ?? 'AVERAGE',
       recommendation: parsed.recommendation ?? '',

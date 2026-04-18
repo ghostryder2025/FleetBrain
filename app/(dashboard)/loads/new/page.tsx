@@ -382,7 +382,7 @@ export default function NewLoadPage() {
               <p className="text-zinc-400 text-sm mt-0.5">FleetBrain AI Rating</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold">${result.costs.net_profit.toFixed(0)}</p>
+              <p className="text-2xl font-bold">${(result.costs?.net_profit ?? 0).toFixed(0)}</p>
               <p className="text-zinc-400 text-sm">Net Profit</p>
             </div>
           </div>
@@ -402,36 +402,36 @@ export default function NewLoadPage() {
           <div>
             <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wide mb-3">Cost Breakdown</h3>
             <div className="grid grid-cols-2 gap-3">
-              <BreakdownItem label="Revenue" value={`$${result.extraction.revenue.toFixed(0)}`} positive />
-              <BreakdownItem label="Rate/Mile" value={`$${result.costs.rate_per_mile.toFixed(2)}`} />
-              <BreakdownItem label="Fuel Cost" value={`-$${result.costs.fuel_cost.toFixed(0)}`} negative />
-              <BreakdownItem label="Diesel Price" value={`$${result.costs.fuel_price_used.toFixed(3)}/gal`} />
-              <BreakdownItem label="Maintenance" value={`-$${result.costs.maintenance_allocation.toFixed(0)}`} negative />
-              {result.costs.driver_pay > 0 && (
-                <BreakdownItem label="Driver Pay" value={`-$${result.costs.driver_pay.toFixed(0)}`} negative />
+              <BreakdownItem label="Revenue" value={`$${(result.extraction?.revenue ?? 0).toFixed(0)}`} positive />
+              <BreakdownItem label="Rate/Mile" value={`$${(result.costs?.rate_per_mile ?? 0).toFixed(2)}`} />
+              <BreakdownItem label="Fuel Cost" value={`-$${(result.costs?.fuel_cost ?? 0).toFixed(0)}`} negative />
+              <BreakdownItem label="Diesel Price" value={`$${(result.costs?.fuel_price_used ?? 0).toFixed(3)}/gal`} />
+              <BreakdownItem label="Maintenance" value={`-$${(result.costs?.maintenance_allocation ?? 0).toFixed(0)}`} negative />
+              {(result.costs?.driver_pay ?? 0) > 0 && (
+                <BreakdownItem label="Driver Pay" value={`-$${(result.costs?.driver_pay ?? 0).toFixed(0)}`} negative />
               )}
-              {result.costs.toll_estimate > 0 && (
-                <BreakdownItem label="Tolls" value={`-$${result.costs.toll_estimate.toFixed(0)}`} negative />
+              {(result.costs?.toll_estimate ?? 0) > 0 && (
+                <BreakdownItem label="Tolls" value={`-$${(result.costs?.toll_estimate ?? 0).toFixed(0)}`} negative />
               )}
-              <BreakdownItem label="Total Expenses" value={`-$${result.costs.total_expenses.toFixed(0)}`} negative />
-              <BreakdownItem label="Profit/Mile" value={`$${result.costs.profit_per_mile.toFixed(2)}`} />
+              <BreakdownItem label="Total Expenses" value={`-$${(result.costs?.total_expenses ?? 0).toFixed(0)}`} negative />
+              <BreakdownItem label="Profit/Mile" value={`$${(result.costs?.profit_per_mile ?? 0).toFixed(2)}`} />
             </div>
           </div>
 
           {/* Route details */}
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="bg-black/20 rounded-xl p-3">
-              <p className="text-lg font-bold">{result.extraction.loaded_miles}</p>
+              <p className="text-lg font-bold">{result.extraction?.loaded_miles ?? 0}</p>
               <p className="text-xs text-zinc-500 mt-0.5">Loaded Mi</p>
             </div>
             <div className="bg-black/20 rounded-xl p-3">
-              <p className="text-lg font-bold">{result.extraction.deadhead_miles}</p>
+              <p className="text-lg font-bold">{result.extraction?.deadhead_miles ?? 0}</p>
               <p className="text-xs text-zinc-500 mt-0.5">Deadhead Mi</p>
             </div>
             <div className="bg-black/20 rounded-xl p-3">
               <p className="text-lg font-bold">
-                {result.extraction.loaded_miles > 0
-                  ? Math.round((result.extraction.deadhead_miles / result.extraction.loaded_miles) * 100)
+                {(result.extraction?.loaded_miles ?? 0) > 0
+                  ? Math.round(((result.extraction?.deadhead_miles ?? 0) / (result.extraction?.loaded_miles ?? 1)) * 100)
                   : 0}%
               </p>
               <p className="text-xs text-zinc-500 mt-0.5">DH Ratio</p>
