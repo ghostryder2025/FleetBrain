@@ -8,9 +8,12 @@ export async function GET(req: NextRequest) {
 
   if (code) {
     const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`)
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (!error && data.session) {
+      // Detect password recovery vs regular auth
+      const isRecovery = next === '/reset-password' ||
+        data.session.user.recovery_sent_at != null
+      return NextResponse.redirect(`${origin}${isRecovery ? '/reset-password' : next}`)
     }
   }
 
