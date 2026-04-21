@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { Truck, AIAnalysis } from '@/types'
+import { DIESEL_REGIONS } from '@/lib/eia'
 
 const RATING_COLORS: Record<string, string> = {
   EXCELLENT: 'border-[#00ff88] bg-[#00ff88]/5',
@@ -25,6 +26,7 @@ export default function NewLoadPage() {
   const [trucks, setTrucks] = useState<Truck[]>([])
   const [selectedTruck, setSelectedTruck] = useState('')
   const [fuelPrice, setFuelPrice] = useState<number | null>(null)
+  const [fuelRegion, setFuelRegion] = useState('national')
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -48,20 +50,25 @@ export default function NewLoadPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const [{ data: trucksData }, fuelRes] = await Promise.all([
-        supabase.from('trucks').select('*').eq('user_id', user.id).order('created_at'),
-        fetch('/api/fuel-prices'),
-      ])
-
-      if (trucksData) setTrucks(trucksData as Truck[])
-      if (fuelRes.ok) {
-        const fuelData = await fuelRes.json()
-        setFuelPrice(fuelData.value)
-        if (trucksData && trucksData.length > 0) setSelectedTruck(trucksData[0].id)
+      const { data: trucksData } = await supabase.from('trucks').select('*').eq('user_id', user.id).order('created_at')
+      if (trucksData) {
+        setTrucks(trucksData as Truck[])
+        if (trucksData.length > 0) setSelectedTruck(trucksData[0].id)
       }
     }
     load()
   }, [])
+
+  useEffect(() => {
+    async function fetchFuel() {
+      const res = await fetch(`/api/fuel-prices?region=${fuelRegion}`)
+      if (res.ok) {
+        const data = await res.json()
+        setFuelPrice(data.value)
+      }
+    }
+    fetchFuel()
+  }, [fuelRegion])
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -100,6 +107,7 @@ export default function NewLoadPage() {
       formData.append('deadhead_miles', deadheadMiles || '0')
       if (commodity) formData.append('commodity', commodity)
       formData.append('driver_pay', driverPay || '0')
+      formData.append('fuel_region', fuelRegion)
 
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/analyze-load', {
@@ -140,15 +148,22 @@ export default function NewLoadPage() {
       </div>
 
       {/* Live fuel price banner */}
-      {fuelPrice && (
-        <div className="bg-[#5fd0a8]/10 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 flex items-center gap-2 text-sm">
-          <span>⛽</span>
-          <span className="text-zinc-300">
-            Live diesel price: <strong className="text-white">${fuelPrice.toFixed(3)}/gal</strong>
-            <span className="text-zinc-500 ml-2">National avg · updated weekly</span>
-          </span>
-        </div>
-      )}
+      <div className="bg-[#5fd0a8]/10 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 flex items-center gap-3 text-sm flex-wrap">
+        <span>⛽</span>
+        <span className="text-zinc-300 flex-1">
+          Diesel: <strong className="text-white">{fuelPrice ? `$${fuelPrice.toFixed(3)}/gal` : '…'}</strong>
+          <span className="text-zinc-500 ml-2">· updated weekly</span>
+        </span>
+        <select
+          value={fuelRegion}
+          onChange={e => setFuelRegion(e.target.value)}
+          className="bg-[#1b1b1b] border border-[#333] rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-[#5fd0a8]"
+        >
+          {Object.entries(DIESEL_REGIONS).map(([key, r]) => (
+            <option key={key} value={key}>{r.label}</option>
+          ))}
+        </select>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Mode toggle */}

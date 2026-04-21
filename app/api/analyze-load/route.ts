@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
 
     const image = formData.get('image') as File | null
     const truckId = formData.get('truck_id') as string | null
+    const fuelRegion = (formData.get('fuel_region') as string | null) ?? 'national'
 
     // Manual fields (used if no image, or to override extraction)
     const manualRevenue = formData.get('revenue') as string | null
@@ -48,8 +49,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get live fuel price
-    const fuelPriceData = await getDieselPrice()
+    // Get live fuel price for selected region
+    const fuelPriceData = await getDieselPrice(fuelRegion)
     const fuelPrice = fuelPriceData.value
 
     // Prepare image if provided
