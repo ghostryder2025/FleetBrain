@@ -15,45 +15,20 @@ export default function ResetPasswordPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    async function verifyToken() {
-      // New PKCE flow: ?code= query param
-      const searchParams = new URLSearchParams(window.location.search)
-      const code = searchParams.get('code')
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-          setError('This reset link has expired. Please request a new one.')
-        } else {
-          setReady(true)
-        }
-        return
-      }
-
-      // Legacy flow: #access_token= hash
-      const hash = window.location.hash
-      if (hash && hash.includes('type=recovery')) {
-        const params = new URLSearchParams(hash.substring(1))
-        const accessToken = params.get('access_token')
-        const refreshToken = params.get('refresh_token')
-        if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-          if (error) {
-            setError('This reset link has expired. Please request a new one.')
-          } else {
-            setReady(true)
-          }
-          return
-        }
-      }
-
-      // Fallback: listen for PASSWORD_RECOVERY event
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === 'PASSWORD_RECOVERY') setReady(true)
-      })
-      return () => subscription.unsubscribe()
+    // Server callback already exchanged the code — just check for a live session
+    const searchParams = new URLSearchParams(window.location.search)
+    if (searchParams.get('error') === 'expired') {
+      setError('This reset link has expired. Please request a new one.')
+      return
     }
 
-    verifyToken()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setReady(true)
+      } else {
+        setError('This reset link has expired. Please request a new one.')
+      }
+    })
   }, [supabase])
 
   async function handleReset(e: React.FormEvent) {
