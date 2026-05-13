@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { Truck, AIAnalysis } from '@/types'
-import { DIESEL_REGIONS } from '@/lib/eia'
 
 const RATING_COLORS: Record<string, string> = {
   EXCELLENT: 'border-[#00ff88] bg-[#00ff88]/5',
@@ -26,7 +25,10 @@ export default function NewLoadPage() {
   const [trucks, setTrucks] = useState<Truck[]>([])
   const [selectedTruck, setSelectedTruck] = useState('')
   const [fuelPrice, setFuelPrice] = useState<number | null>(null)
-  const [fuelRegion, setFuelRegion] = useState('national')
+  const [fuelRegionLabel, setFuelRegionLabel] = useState('National Average')
+  const [homeZip, setHomeZip] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('fleetbrain_zip') ?? '' : '')
+  const [zipValid, setZipValid] = useState(false)
+  const [deadheadLoading, setDeadheadLoading] = useState(false)
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -59,16 +61,43 @@ export default function NewLoadPage() {
     load()
   }, [])
 
+  const fetchFuelByZip = useCallback(async (zip: string) => {
+    const url = /^\d{5}$/.test(zip)
+      ? `/api/fuel-prices?zip=${zip}`
+      : `/api/fuel-prices`
+    const res = await fetch(url)
+    if (res.ok) {
+      const data = await res.json()
+      setFuelPrice(data.value)
+      setFuelRegionLabel(data.region ?? 'National Average')
+      if (/^\d{5}$/.test(zip)) setZipValid(true)
+    }
+  }, [])
+
   useEffect(() => {
-    async function fetchFuel() {
-      const res = await fetch(`/api/fuel-prices?region=${fuelRegion}`)
+    fetchFuelByZip(homeZip)
+  }, [homeZip, fetchFuelByZip])
+
+  async function handleZipChange(zip: string) {
+    setHomeZip(zip)
+    setZipValid(false)
+    if (typeof window !== 'undefined') localStorage.setItem('fleetbrain_zip', zip)
+    if (/^\d{5}$/.test(zip)) fetchFuelByZip(zip)
+  }
+
+  async function handleOriginBlur() {
+    if (!homeZip || !origin || !zipValid) return
+    setDeadheadLoading(true)
+    try {
+      const res = await fetch(`/api/deadhead?zip=${homeZip}&pickup=${encodeURIComponent(origin)}`)
       if (res.ok) {
         const data = await res.json()
-        setFuelPrice(data.value)
+        if (data.miles) setDeadheadMiles(String(data.miles))
       }
+    } finally {
+      setDeadheadLoading(false)
     }
-    fetchFuel()
-  }, [fuelRegion])
+  }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -107,7 +136,7 @@ export default function NewLoadPage() {
       formData.append('deadhead_miles', deadheadMiles || '0')
       if (commodity) formData.append('commodity', commodity)
       formData.append('driver_pay', driverPay || '0')
-      formData.append('fuel_region', fuelRegion)
+      if (homeZip) formData.append('home_zip', homeZip)
 
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/analyze-load', {
@@ -147,22 +176,29 @@ export default function NewLoadPage() {
         <h1 className="text-xl font-bold">Analyze Load</h1>
       </div>
 
-      {/* Live fuel price banner */}
-      <div className="bg-[#5fd0a8]/10 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 flex items-center gap-3 text-sm flex-wrap">
-        <span>⛽</span>
-        <span className="text-zinc-300 flex-1">
-          Diesel: <strong className="text-white">{fuelPrice ? `$${fuelPrice.toFixed(3)}/gal` : '…'}</strong>
-          <span className="text-zinc-500 ml-2">· updated weekly</span>
-        </span>
-        <select
-          value={fuelRegion}
-          onChange={e => setFuelRegion(e.target.value)}
-          className="bg-[#1b1b1b] border border-[#333] rounded-lg px-2 py-1 text-white text-xs focus:outline-none focus:border-[#5fd0a8]"
-        >
-          {Object.entries(DIESEL_REGIONS).map(([key, r]) => (
-            <option key={key} value={key}>{r.label}</option>
-          ))}
-        </select>
+      {/* Home zip + live fuel price banner */}
+      <div className="bg-[#5fd0a8]/10 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 space-y-2 text-sm">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span>📍</span>
+          <span className="text-zinc-400 text-xs">Your home zip</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={5}
+            value={homeZip}
+            onChange={e => handleZipChange(e.target.value)}
+            placeholder="e.g. 90210"
+            className="bg-[#1b1b1b] border border-[#333] rounded-lg px-3 py-1 text-white text-sm w-28 focus:outline-none focus:border-[#5fd0a8]"
+          />
+          {zipValid && <span className="text-[#5fd0a8] text-xs">✓ location found</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <span>⛽</span>
+          <span className="text-zinc-300">
+            Diesel: <strong className="text-white">{fuelPrice ? `$${fuelPrice.toFixed(3)}/gal` : '…'}</strong>
+            <span className="text-zinc-500 ml-2 text-xs">· {fuelRegionLabel} · updated weekly</span>
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -271,11 +307,15 @@ export default function NewLoadPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Origin</label>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+                  Pickup City
+                  {zipValid && <span className="text-zinc-500 font-normal ml-1">(deadhead auto-calculated)</span>}
+                </label>
                 <input
                   type="text"
                   value={origin}
                   onChange={e => setOrigin(e.target.value)}
+                  onBlur={handleOriginBlur}
                   placeholder="Dallas, TX"
                   className="w-full bg-[#1b1b1b] border border-[#333] rounded-xl px-3 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-[#5fd0a8] transition-colors"
                 />
@@ -325,7 +365,13 @@ export default function NewLoadPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Deadhead Miles</label>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
+                  Deadhead Miles
+                  {deadheadLoading && <span className="text-zinc-500 font-normal ml-1 animate-pulse">calculating…</span>}
+                  {!deadheadLoading && zipValid && deadheadMiles !== '0' && (
+                    <span className="text-[#5fd0a8] font-normal ml-1">estimated</span>
+                  )}
+                </label>
                 <input
                   type="number"
                   value={deadheadMiles}

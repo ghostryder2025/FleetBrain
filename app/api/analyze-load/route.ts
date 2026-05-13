@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLoad } from '@/lib/claude'
 import { createClient } from '@/lib/supabase/server'
-import { getDieselPrice } from '@/lib/eia'
+import { getDieselPrice, getDieselPriceByZip } from '@/lib/eia'
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const image = formData.get('image') as File | null
     const truckId = formData.get('truck_id') as string | null
-    const fuelRegion = (formData.get('fuel_region') as string | null) ?? 'national'
+    const homeZip = formData.get('home_zip') as string | null
 
     // Manual fields (used if no image, or to override extraction)
     const manualRevenue = formData.get('revenue') as string | null
@@ -49,8 +49,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get live fuel price for selected region
-    const fuelPriceData = await getDieselPrice(fuelRegion)
+    // Get live fuel price — zip-based if available, else national
+    const fuelPriceData = homeZip
+      ? await getDieselPriceByZip(homeZip)
+      : await getDieselPrice('national')
     const fuelPrice = fuelPriceData.value
 
     // Prepare image if provided
