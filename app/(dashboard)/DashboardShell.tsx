@@ -9,6 +9,7 @@ const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
   { href: '/loads', label: 'Loads', icon: '📦' },
   { href: '/fleet', label: 'Fleet', icon: '🚚' },
+  { href: '/upgrade', label: 'Upgrade', icon: '⚡' },
 ]
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {

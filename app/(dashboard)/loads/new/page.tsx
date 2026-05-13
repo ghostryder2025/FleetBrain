@@ -42,6 +42,7 @@ export default function NewLoadPage() {
   const [commodity, setCommodity] = useState('')
   const [driverPay, setDriverPay] = useState('0')
 
+  const [tier, setTier] = useState<'free' | 'premium'>('free')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<AIAnalysis | null>(null)
@@ -52,10 +53,18 @@ export default function NewLoadPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: trucksData } = await supabase.from('trucks').select('*').eq('user_id', user.id).order('created_at')
+      const [{ data: trucksData }, subRes] = await Promise.all([
+        supabase.from('trucks').select('*').eq('user_id', user.id).order('created_at'),
+        fetch('/api/subscription'),
+      ])
       if (trucksData) {
         setTrucks(trucksData as Truck[])
         if (trucksData.length > 0) setSelectedTruck(trucksData[0].id)
+      }
+      if (subRes.ok) {
+        const sub = await subRes.json()
+        setTier(sub.tier === 'premium' ? 'premium' : 'free')
+        if (sub.tier !== 'premium') setMode('manual')
       }
     }
     load()
@@ -204,19 +213,42 @@ export default function NewLoadPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Mode toggle */}
         <div className="bg-[#121212] border border-[#242424] rounded-2xl p-1 flex">
-          {(['screenshot', 'manual'] as const).map(m => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                mode === m ? 'bg-[#5fd0a8] text-white' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              {m === 'screenshot' ? '📷 Screenshot' : '✏️ Manual Entry'}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => tier === 'premium' ? setMode('screenshot') : null}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors relative ${
+              mode === 'screenshot'
+                ? 'bg-[#5fd0a8] text-white'
+                : tier === 'premium'
+                  ? 'text-zinc-400 hover:text-white'
+                  : 'text-zinc-600 cursor-default'
+            }`}
+          >
+            📷 Screenshot
+            {tier === 'free' && (
+              <span className="ml-1.5 text-xs bg-[#5fd0a8]/20 text-[#5fd0a8] px-1.5 py-0.5 rounded-full">Premium</span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('manual')}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+              mode === 'manual' ? 'bg-[#5fd0a8] text-white' : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            ✏️ Manual Entry
+          </button>
         </div>
+
+        {/* Upgrade banner for free users */}
+        {tier === 'free' && (
+          <div className="bg-[#5fd0a8]/5 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm">
+            <span className="text-zinc-400">📷 Upload a load board screenshot for instant AI analysis</span>
+            <Link href="/upgrade" className="shrink-0 bg-[#5fd0a8] hover:bg-[#46b891] text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-colors">
+              Upgrade $49/mo
+            </Link>
+          </div>
+        )}
 
         {/* Truck selector */}
         {trucks.length > 0 && (
@@ -499,9 +531,11 @@ export default function NewLoadPage() {
             </div>
           </div>
 
-          {/* AI Recommendation */}
+          {/* Recommendation */}
           <div className="bg-black/20 rounded-xl p-4">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide mb-2">AI Recommendation</p>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wide mb-2">
+              {tier === 'premium' ? 'AI Recommendation' : 'Summary'}
+            </p>
             <p className="text-sm text-zinc-300 leading-relaxed">{result.recommendation}</p>
           </div>
 
@@ -514,6 +548,19 @@ export default function NewLoadPage() {
                   {flag}
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Upgrade nudge for free users */}
+          {tier === 'free' && (
+            <div className="bg-[#5fd0a8]/5 border border-[#5fd0a8]/20 rounded-xl p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-white">Want AI-powered insights?</p>
+                <p className="text-xs text-zinc-500 mt-0.5">Screenshot analysis, smart flags, and AI recommendations.</p>
+              </div>
+              <Link href="/upgrade" className="shrink-0 bg-[#5fd0a8] hover:bg-[#46b891] text-white font-bold px-4 py-2 rounded-xl text-sm transition-colors">
+                Upgrade
+              </Link>
             </div>
           )}
 

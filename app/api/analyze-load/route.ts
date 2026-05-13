@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeLoad } from '@/lib/claude'
+import { calculateLoadProfit } from '@/lib/calculate'
 import { createClient } from '@/lib/supabase/server'
 import { getDieselPrice, getDieselPriceByZip } from '@/lib/eia'
 
@@ -22,7 +23,6 @@ export async function POST(req: NextRequest) {
     const truckId = formData.get('truck_id') as string | null
     const homeZip = formData.get('home_zip') as string | null
 
-    // Manual fields (used if no image, or to override extraction)
     const manualRevenue = formData.get('revenue') as string | null
     const manualMiles = formData.get('loaded_miles') as string | null
     const manualDeadhead = formData.get('deadhead_miles') as string | null
@@ -31,7 +31,25 @@ export async function POST(req: NextRequest) {
     const manualCommodity = formData.get('commodity') as string | null
     const manualDriverPay = formData.get('driver_pay') as string | null
 
-    // Get truck profile if selected
+    // Check subscription tier
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single()
+
+    const isPremium = profile?.subscription_tier === 'premium'
+
+    // Block screenshot AI for free users
+    const hasImage = image && image.size > 0
+    if (hasImage && !isPremium) {
+      return NextResponse.json(
+        { error: 'upgrade_required', message: 'Screenshot analysis requires Premium.' },
+        { status: 403 }
+      )
+    }
+
+    // Get truck profile
     let truckMpg = 7.0
     let maintenanceCostPerMile = 0.20
 
@@ -49,40 +67,58 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get live fuel price — zip-based if available, else national
+    // Get live fuel price
     const fuelPriceData = homeZip
       ? await getDieselPriceByZip(homeZip)
       : await getDieselPrice('national')
     const fuelPrice = fuelPriceData.value
 
-    // Prepare image if provided
-    let imageBase64: string | undefined
-    let imageMimeType: string | undefined
+    let analysis
 
-    if (image && image.size > 0) {
-      const buffer = await image.arrayBuffer()
-      imageBase64 = Buffer.from(buffer).toString('base64')
-      imageMimeType = image.type || 'image/jpeg'
+    if (isPremium) {
+      // Premium: full AI analysis
+      let imageBase64: string | undefined
+      let imageMimeType: string | undefined
+
+      if (hasImage) {
+        const buffer = await image.arrayBuffer()
+        imageBase64 = Buffer.from(buffer).toString('base64')
+        imageMimeType = image.type || 'image/jpeg'
+      }
+
+      const hasManualData = manualRevenue || manualMiles
+
+      analysis = await analyzeLoad({
+        imageBase64,
+        imageMimeType,
+        manualData: hasManualData ? {
+          origin: manualOrigin || undefined,
+          destination: manualDestination || undefined,
+          revenue: manualRevenue ? parseFloat(manualRevenue) : undefined,
+          loaded_miles: manualMiles ? parseFloat(manualMiles) : undefined,
+          deadhead_miles: manualDeadhead ? parseFloat(manualDeadhead) : undefined,
+          commodity: manualCommodity || undefined,
+        } : undefined,
+        truckMpg,
+        maintenanceCostPerMile,
+        fuelPrice,
+        driverPay: manualDriverPay ? parseFloat(manualDriverPay) : 0,
+      })
+    } else {
+      // Free: math-only calculation
+      analysis = calculateLoadProfit({
+        origin: manualOrigin ?? undefined,
+        destination: manualDestination ?? undefined,
+        revenue: parseFloat(manualRevenue ?? '0'),
+        loaded_miles: parseFloat(manualMiles ?? '0'),
+        deadhead_miles: parseFloat(manualDeadhead ?? '0'),
+        commodity: manualCommodity ?? undefined,
+        mpg: truckMpg,
+        fuel_price: fuelPrice,
+        maintenance_cost_per_mile: maintenanceCostPerMile,
+        driver_pay: parseFloat(manualDriverPay ?? '0'),
+      })
     }
-
-    const hasManualData = manualRevenue || manualMiles
-
-    const analysis = await analyzeLoad({
-      imageBase64,
-      imageMimeType,
-      manualData: hasManualData ? {
-        origin: manualOrigin || undefined,
-        destination: manualDestination || undefined,
-        revenue: manualRevenue ? parseFloat(manualRevenue) : undefined,
-        loaded_miles: manualMiles ? parseFloat(manualMiles) : undefined,
-        deadhead_miles: manualDeadhead ? parseFloat(manualDeadhead) : undefined,
-        commodity: manualCommodity || undefined,
-      } : undefined,
-      truckMpg,
-      maintenanceCostPerMile,
-      fuelPrice,
-      driverPay: manualDriverPay ? parseFloat(manualDriverPay) : 0,
-    })
 
     // Save to database
     const { data: savedLoad, error: dbError } = await supabase.from('loads').insert({
@@ -108,14 +144,13 @@ export async function POST(req: NextRequest) {
       ai_analysis: analysis,
     }).select().single()
 
-    if (dbError) {
-      console.error('DB save error:', dbError)
-    }
+    if (dbError) console.error('DB save error:', dbError)
 
     return NextResponse.json({
       analysis,
       load_id: savedLoad?.id,
       fuel_price: fuelPrice,
+      tier: isPremium ? 'premium' : 'free',
     })
   } catch (err) {
     console.error('analyze-load error:', err)
