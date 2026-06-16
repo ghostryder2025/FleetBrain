@@ -3,6 +3,7 @@ import { analyzeLoad } from '@/lib/claude'
 import { calculateLoadProfit } from '@/lib/calculate'
 import { createClient } from '@/lib/supabase/server'
 import { getDieselPrice, getDieselPriceByZip } from '@/lib/eia'
+import { getTrialStatus } from '@/lib/subscription'
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,14 +32,15 @@ export async function POST(req: NextRequest) {
     const manualCommodity = formData.get('commodity') as string | null
     const manualDriverPay = formData.get('driver_pay') as string | null
 
-    // Check subscription tier
+    // Check subscription tier (includes 7-day free trial from signup)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, created_at')
       .eq('id', user.id)
       .single()
 
-    const isPremium = profile?.subscription_tier === 'premium'
+    const trial = getTrialStatus(profile?.subscription_tier, profile?.created_at)
+    const isPremium = trial.effectiveTier === 'premium'
 
     // Block screenshot AI for free users
     const hasImage = image && image.size > 0
@@ -151,6 +153,8 @@ export async function POST(req: NextRequest) {
       load_id: savedLoad?.id,
       fuel_price: fuelPrice,
       tier: isPremium ? 'premium' : 'free',
+      isTrialActive: trial.isTrialActive,
+      trialDaysLeft: trial.trialDaysLeft,
     })
   } catch (err) {
     console.error('analyze-load error:', err)

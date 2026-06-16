@@ -43,6 +43,8 @@ export default function NewLoadPage() {
   const [driverPay, setDriverPay] = useState('0')
 
   const [tier, setTier] = useState<'free' | 'premium'>('free')
+  const [isTrialActive, setIsTrialActive] = useState(false)
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<AIAnalysis | null>(null)
@@ -64,6 +66,8 @@ export default function NewLoadPage() {
       if (subRes.ok) {
         const sub = await subRes.json()
         setTier(sub.tier === 'premium' ? 'premium' : 'free')
+        setIsTrialActive(!!sub.isTrialActive)
+        setTrialDaysLeft(sub.trialDaysLeft ?? 0)
         if (sub.tier !== 'premium') setMode('manual')
       }
     }
@@ -240,12 +244,22 @@ export default function NewLoadPage() {
           </button>
         </div>
 
-        {/* Upgrade banner for free users */}
+        {/* Trial active banner */}
+        {tier === 'premium' && isTrialActive && (
+          <div className="bg-[#5fd0a8]/5 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm">
+            <span className="text-zinc-400">⚡ Free trial — {trialDaysLeft} day{trialDaysLeft === 1 ? '' : 's'} of Premium left</span>
+            <Link href="/upgrade" className="shrink-0 bg-[#5fd0a8] hover:bg-[#46b891] text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-colors">
+              Keep it — $29/mo
+            </Link>
+          </div>
+        )}
+
+        {/* Upgrade banner for free (trial expired) users */}
         {tier === 'free' && (
           <div className="bg-[#5fd0a8]/5 border border-[#5fd0a8]/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3 text-sm">
             <span className="text-zinc-400">📷 Upload a load board screenshot for instant AI analysis</span>
             <Link href="/upgrade" className="shrink-0 bg-[#5fd0a8] hover:bg-[#46b891] text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-colors">
-              Upgrade $49/mo
+              Upgrade $29/mo
             </Link>
           </div>
         )}
