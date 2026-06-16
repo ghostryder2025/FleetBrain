@@ -56,9 +56,9 @@ export function calculateLoadProfit(p: CalcParams): AIAnalysis {
       loaded_miles: p.loaded_miles,
       deadhead_miles: p.deadhead_miles,
       commodity: p.commodity ?? 'General Freight',
-      pickup_date: null,
-      delivery_date: null,
-      broker_name: null,
+      pickup_date: undefined,
+      delivery_date: undefined,
+      broker_name: undefined,
     },
     costs: {
       fuel_price_used: p.fuel_price,
