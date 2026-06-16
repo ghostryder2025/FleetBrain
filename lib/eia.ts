@@ -23,7 +23,7 @@ async function fetchEIAPrice(duoarea: string, label: string, fallback: number): 
     api_key: apiKey,
     frequency: 'weekly',
     'data[0]': 'value',
-    'facets[product][]': 'DSD',
+    'facets[product][]': 'EPD2D',
     'facets[duoarea][]': duoarea,
     'sort[0][column]': 'period',
     'sort[0][direction]': 'desc',
